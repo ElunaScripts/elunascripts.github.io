@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eluna Scripts</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="apple-touch-icon" sizes="180x180" href="https://via.placeholder.com/180/000000/ffffff?text=E">
+    <link rel="icon" type="image/png" sizes="32x32" href="https://via.placeholder.com/32/000000/ffffff?text=E">
+    <link rel="icon" type="image/png" sizes="16x16" href="https://via.placeholder.com/16/000000/ffffff?text=E">
+    <meta name="theme-color" content="#000000">
+</head>
+<body>
+    <div class="grid-bg"></div>
+
+    <nav class="navbar" id="navbar">
+        <div class="container">
+            <div class="logo">
+                <span class="logo-text">Eluna</span>
+                <span class="logo-highlight">Scripts</span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <div class="hero-content">
+                <h1 class="hero-title"><span class="accent">Eluna</span> Scripts Catalogue</h1>
+                <p class="hero-subtitle">
+                    Discover a collection of Lua scripts carefully designed to transform your server experience.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stats Section -->
+    <section class="stats-section">
+        <div class="container">
+            <div class="stats-grid">
+                <div class="stat-card" data-stat-index="0">
+                    <div class="stat-icon">
+                        <i class="fas fa-code"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="repositories-count">--</div>
+                        <div class="stat-label">Available scripts</div>
+                    </div>
+                </div>
+                
+                <div class="stat-card" data-stat-index="1">
+                    <div class="stat-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="contributors-count">--</div>
+                        <div class="stat-label">Active contributors</div>
+                    </div>
+                </div>
+                
+                <div class="stat-card" data-stat-index="2">
+                    <div class="stat-icon">
+                        <i class="fas fa-star"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="stars-count">--</div>
+                        <div class="stat-label">Stars</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Content Section -->
+    <section class="scripts-section">
+        <div class="container">
+            <div class="scripts-header">
+                <h2 class="section-title">Scripts</h2>
+                
+                <div class="search-wrapper">
+                    <input 
+                        type="text" 
+                        id="search-input" 
+                        placeholder="Search for a script, a function, an author..." 
+                        class="search-input"
+                    >
+                    <div class="search-icon">
+                        <i class="fas fa-search"></i>
+                    </div>
+                </div>
+                
+                <div class="section-controls">
+                    <div class="sort-dropdown">
+                        <button class="control-button" id="sort-button">
+                            <i class="fas fa-sort-amount-down"></i>
+                            <span id="sort-text">More stars</span>
+                        </button>
+                        <div class="sort-options" id="sort-options">
+                            <button class="sort-option" data-sort="newest">More recent</button>
+                            <button class="sort-option" data-sort="stars">More stars</button>
+                            <button class="sort-option" data-sort="forks">More forks</button>
+                            <button class="sort-option" data-sort="updated">Recently updated</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Loading indicator -->
+            <div class="loading-container" id="loading-container">
+                <div class="loading-spinner"></div>
+                <p class="loading-text">Loading scripts from GitHub...</p>
+            </div>
+            
+            <!-- Error message -->
+            <div class="error-container" id="error-container" style="display: none;">
+                <div class="error-icon">
+                    <i class="fas fa-exclamation-circle"></i>
+                </div>
+                <h3 class="error-title">Unable to load data</h3>
+                <p class="error-message" id="error-message"></p>
+                <button class="retry-button" id="retry-button">Try again</button>
+            </div>
+            
+            <!-- Scripts Container -->
+            <div class="scripts-grid" id="scripts-container"></div>
+            
+            <!-- No results message -->
+            <div class="no-results" id="no-results" style="display: none;">
+                <div class="no-results-icon">
+                    <i class="fas fa-search"></i>
+                </div>
+                <h3 class="no-results-title">No results found</h3>
+                <p class="no-results-message">Try other search terms or explore our popular categories.</p>
+            </div>
+            
+            <!-- Pagination -->
+            <div class="pagination" id="pagination"></div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-about">
+                    <div class="footer-logo">
+                        <span class="logo-text">Eluna</span>
+                        <span class="logo-highlight">Scripts</span>
+                    </div>
+                    <p class="footer-description">
+                        A community dedicated to developing scripts to enrich the server experience.
+                    </p>
+                    <div class="social-links">
+                        <a href="https://github.com/topics/azerothcore-lua" target="_blank" class="social-link">
+                            <i class="fab fa-github"></i>
+                        </a>
+                        <a href="#" class="social-link">
+                            <i class="fab fa-discord"></i>
+                        </a>
+                        <a href="#" class="social-link">
+                            <i class="fab fa-twitter"></i>
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="footer-links">
+                    <h4 class="footer-title">GitHub</h4>
+                    <ul class="footer-list">
+                        <li><a href="https://github.com/topics/azerothcore-lua" target="_blank">Explore</a></li>
+                        <li><a href="https://github.com/azerothcore/mod-eluna" target="_blank">AzerothCore Eluna</a></li>
+                        <li><a href="https://github.com/ElunaLuaEngine/Eluna" target="_blank">TrinityCore Eluna</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-links">
+                    <h4 class="footer-title">Development</h4>
+                    <ul class="footer-list">
+                        <li><a href="#">Lua API</a></li>
+                        <li><a href="#">Tutorials</a></li>
+                        <li><a href="#">Contribute</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-links">
+                    <h4 class="footer-title">Contact</h4>
+                    <ul class="footer-list">
+                        <li><a href="#">Discord</a></li>
+                        <li><a href="#">Report a bug</a></li>
+                        <li><a href="#">About</a></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="footer-bottom">
+                <p class="copyright">
+                    © 2025 Eluna Scripts. All rights reserved.
+                </p>
+                <div class="credits">
+                    <span>Designed with <i class="fa-solid fa-heart"></i> by the Eluna community</span>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Back to top button -->
+    <button class="back-to-top" id="back-to-top" aria-label="Retour en haut">
+        <i class="fas fa-arrow-up"></i>
+    </button>
+
+    <template id="script-card-template">
+        <div class="script-card">
+            <div class="script-banner">
+                <div class="script-image-container"></div>
+                <div class="script-overlay"></div>
+                <div class="script-star-count">
+                    <i class="fas fa-star"></i>
+                    <span class="stars-value"></span>
+                </div>
+            </div>
+            
+            <div class="script-content">
+                <div class="script-header">
+                    <h3 class="script-title"></h3>
+                    <div class="script-meta">
+                        <span class="script-author"></span>
+                        <span class="separator">•</span>
+                        <span class="script-date"></span>
+                    </div>
+                </div>
+                
+                <p class="script-description"></p>
+                
+                <div class="script-metrics">
+                    <div class="metric">
+                        <div class="metric-value" data-metric="forks"></div>
+                        <div class="metric-label">Forks</div>
+                    </div>
+                    
+                    <div class="metric">
+                        <div class="metric-value" data-metric="issues"></div>
+                        <div class="metric-label">Issues</div>
+                    </div>
+                    
+                    <div class="metric">
+                        <div class="metric-value" data-metric="watchers"></div>
+                        <div class="metric-label">Observ.</div>
+                    </div>
+                </div>
+                
+                <div class="script-progress">
+                    <div class="progress-bar">
+                        <div class="progress-fill"></div>
+                    </div>
+                    <div class="progress-label"></div>
+                </div>
+                
+                <div class="script-tags"></div>
+                
+                <div class="script-actions">
+                    <a href="#" class="script-button primary" target="_blank">
+                        <i class="fas fa-download"></i> Download
+                    </a>
+                    <a href="#" class="script-button secondary" target="_blank">
+                        <i class="fab fa-github"></i> GitHub
+                    </a>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <script src="script.js"></script>
+</body>
+</html>
