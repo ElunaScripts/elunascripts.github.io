@@ -15,7 +15,10 @@
     animation: fadeIn 0.6s var(--transition-normal) forwards;
     position: relative;
     box-shadow: var(--shadow-soft);
-    transition: all var(--transition-normal);
+    transition: transform 0.6s cubic-bezier(0.3, 1, 0.4, 1),
+                box-shadow 0.6s cubic-bezier(0.3, 1, 0.4, 1);
+    transform-style: preserve-3d;
+    perspective: 1500px;
 }
 
 .script-card::before {
@@ -33,12 +36,24 @@
 }
 
 .script-card:hover {
-    transform: translateY(-10px);
-    box-shadow: var(--shadow-hard), var(--glow-subtle);
+    transform: translateY(-15px) rotateX(2deg) rotateY(-2deg);
+    box-shadow: 
+        20px 20px 60px rgba(0, 0, 0, 0.5),
+        5px 5px 20px var(--subtle-glow),
+        inset 0 0 0 1px var(--border-neon);
 }
 
 .script-card:hover::before {
     border-color: var(--border-neon);
+}
+
+.script-card .script-content {
+    transform: translateZ(0);
+    transition: transform 0.4s cubic-bezier(0.3, 1, 0.4, 1.2);
+}
+
+.script-card:hover .script-content {
+    transform: translateZ(10px);
 }
 
 .script-banner {
