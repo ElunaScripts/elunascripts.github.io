@@ -121,6 +121,18 @@ const config = {
     }
 };
 
+const cacheConfig = {
+    durations: {
+        short: 30 * 60 * 1000,              // 30 minutes
+        medium: 6 * 60 * 60 * 1000,         // 6 hours
+        long: 24 * 60 * 60 * 1000,          // 24 hours (1 day)
+        veryLong: 7 * 24 * 60 * 60 * 1000   // 7 days
+    },
+
+    // Current setting (defaults to medium)
+    current: 'medium'
+};
+
 // Export the config object for use in other modules
 // This is needed if using module system, but kept commented for compatibility
 // export default config;

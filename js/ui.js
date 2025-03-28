@@ -611,6 +611,106 @@ function showRateLimitWarning() {
     }, 10000);
 }
 
+/**
+ * Creates the UI for cache settings
+ */
+function createCacheSettingsUI() {
+    const existingDialog = document.getElementById('cache-settings-dialog');
+    if (existingDialog) {
+        existingDialog.remove();
+    }
+
+    const dialog = document.createElement('div');
+    dialog.id = 'cache-settings-dialog';
+    dialog.className = 'settings-dialog';
+    dialog.style.display = 'none';
+    
+    dialog.innerHTML = `
+        <div class="settings-dialog-content">
+            <div class="settings-header">
+                <h3>Cache Settings</h3>
+                <button class="close-dialog" id="close-cache-settings">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="settings-body">
+                <p>Choose how long to keep repository data cached:</p>
+                <div class="cache-duration-options">
+                    <label>
+                        <input type="radio" name="cache-duration" value="short" ${cacheConfig.current === 'short' ? 'checked' : ''}>
+                        <span>Short (30 minutes)</span>
+                    </label>
+                    <label>
+                        <input type="radio" name="cache-duration" value="medium" ${cacheConfig.current === 'medium' ? 'checked' : ''}>
+                        <span>Medium (6 hours)</span>
+                    </label>
+                    <label>
+                        <input type="radio" name="cache-duration" value="long" ${cacheConfig.current === 'long' ? 'checked' : ''}>
+                        <span>Long (24 hours)</span>
+                    </label>
+                    <label>
+                        <input type="radio" name="cache-duration" value="veryLong" ${cacheConfig.current === 'veryLong' ? 'checked' : ''}>
+                        <span>Very Long (7 days)</span>
+                    </label>
+                </div>
+                <div class="settings-info">
+                    <i class="fas fa-info-circle"></i>
+                    <span>Longer cache times reduce API requests but may show outdated information.</span>
+                </div>
+            </div>
+            <div class="settings-footer">
+                <button class="settings-save-btn" id="save-cache-settings">Save Settings</button>
+                <button class="settings-clear-btn" id="clear-all-cache">Clear All Cache</button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(dialog);
+
+    setTimeout(() => {
+        document.getElementById('close-cache-settings').addEventListener('click', function() {
+            dialog.style.display = 'none';
+        });
+        
+        document.getElementById('save-cache-settings').addEventListener('click', function() {
+            saveCacheSettings();
+        });
+        
+        document.getElementById('clear-all-cache').addEventListener('click', function() {
+            clearAllCache();
+        });
+        
+        const radios = document.querySelectorAll('input[name="cache-duration"]');
+        radios.forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                if (e.target.checked) {
+                    cacheConfig.current = e.target.value;
+                }
+            });
+        });
+        
+        dialog.addEventListener('click', function(e) {
+            if (e.target === dialog) {
+                dialog.style.display = 'none';
+            }
+        });
+        
+        console.log('Cache settings dialog initialized');
+    }, 100);
+}
+
+function addCacheSettingsButton() {
+    const indicator = document.getElementById('cache-indicator');
+    if (indicator) {
+        indicator.addEventListener('click', (e) => {
+            // Only if clicking on the info part, not the refresh button
+            if (!e.target.closest('.cache-refresh-btn')) {
+                document.getElementById('cache-settings-dialog').style.display = 'block';
+            }
+        });
+    }
+}
+
 // Export functions for use in other modules
 // This is needed if using module system, but kept commented for compatibility
 /*

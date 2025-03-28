@@ -15,7 +15,10 @@ function updateCacheIndicator(fromCache, timestamp = null) {
     
     if (fromCache) {
         let timeAgoText = '';
+        let ttlText = '';
+        
         if (timestamp) {
+            // Calculate time since cache was created
             const cacheDate = new Date(timestamp);
             const now = new Date();
             const diffInHours = Math.floor((now - cacheDate) / (1000 * 60 * 60));
@@ -28,20 +31,84 @@ function updateCacheIndicator(fromCache, timestamp = null) {
                 const diffInDays = Math.floor(diffInHours / 24);
                 timeAgoText = `${diffInDays} day${diffInDays > 1 ? 's' : ''} ago`;
             }
+            
+            // Calculate time until cache expires
+            const expiryTime = cacheDate.getTime() + cacheConfig.durations[cacheConfig.current];
+            const timeToExpiry = expiryTime - now.getTime();
+            
+            if (timeToExpiry <= 0) {
+                ttlText = '(expired)';
+            } else {
+                const hoursToExpiry = Math.floor(timeToExpiry / (1000 * 60 * 60));
+                
+                if (hoursToExpiry < 1) {
+                    const minutesToExpiry = Math.floor(timeToExpiry / (1000 * 60));
+                    ttlText = `(expires in ${minutesToExpiry} min)`;
+                } else if (hoursToExpiry < 24) {
+                    ttlText = `(expires in ${hoursToExpiry} hr)`;
+                } else {
+                    const daysToExpiry = Math.floor(hoursToExpiry / 24);
+                    ttlText = `(expires in ${daysToExpiry} days)`;
+                }
+            }
         }
         
         indicator.innerHTML = `
-            <i class="fas fa-database"></i>
-            <span>Cached data ${timeAgoText}</span>
+            <div class="cache-info">
+                <i class="fas fa-database"></i>
+                <span>Cached data ${timeAgoText} ${ttlText}</span>
+            </div>
+            <button class="cache-refresh-btn" title="Refresh data from GitHub" onclick="refreshData()">
+                <i class="fas fa-sync-alt"></i>
+            </button>
         `;
         indicator.classList.add('is-cached');
     } else {
         indicator.innerHTML = `
-            <i class="fas fa-sync-alt"></i>
-            <span>Up-to-date data</span>
+            <div class="cache-info">
+                <i class="fas fa-sync-alt"></i>
+                <span>Up-to-date data</span>
+            </div>
         `;
         indicator.classList.remove('is-cached');
     }
+}
+
+/**
+ * Force refresh data from the API, bypassing cache
+ */
+function refreshData() {
+    // Show a loading spinner in the refresh button
+    const refreshBtn = document.querySelector('.cache-refresh-btn i');
+    if (refreshBtn) {
+        refreshBtn.classList.add('fa-spin');
+    }
+    
+    // Show info toast
+    showInfoToast('Refreshing data from GitHub...');
+    
+    // Clear the repository cache specifically
+    localStorage.removeItem('eluna-repositories');
+    
+    // Re-fetch the data
+    fetchRepositories().then(() => {
+        // Stop the spinner when done
+        if (refreshBtn) {
+            refreshBtn.classList.remove('fa-spin');
+        }
+        
+        // Show success toast
+        showSuccessToast('Data refreshed successfully!');
+    }).catch(err => {
+        console.error('Failed to refresh data:', err);
+        // Stop the spinner even if there's an error
+        if (refreshBtn) {
+            refreshBtn.classList.remove('fa-spin');
+        }
+        
+        // Show error toast
+        showErrorToast('Failed to refresh data. Please try again later.');
+    });
 }
 
 /**
@@ -96,19 +163,141 @@ function checkCache(key, ignoreExpiry = false) {
         const { data, timestamp } = JSON.parse(cachedItem);
         const now = new Date().getTime();
         
-        // Cache expires after 24 hours unless ignoreExpiry is true
-        if (!ignoreExpiry && now - timestamp > 24 * 60 * 60 * 1000) {
+        // Use the configured cache duration
+        const cacheDuration = cacheConfig.durations[cacheConfig.current];
+        
+        // Check if cache has expired
+        if (!ignoreExpiry && now - timestamp > cacheDuration) {
+            console.log(`Cache expired for ${key} (${cacheConfig.current} TTL: ${cacheDuration}ms)`);
             return null;
         }
-               
+        
+        console.log(`Using cached data for ${key} with ${data.length} items`);
+        
         // Return both data and timestamp
         return {
             data,
             timestamp
         };
     } catch (e) {
+        console.error('Error reading from cache:', e);
         return null;
     }
+}
+
+/**
+ * Sets the cache duration
+ * @param {string} duration - The duration setting (short, medium, long, veryLong)
+ */
+function setCacheDuration(duration) {
+    if (cacheConfig.durations[duration]) {
+        cacheConfig.current = duration;
+        // Store the user preference
+        localStorage.setItem('cache-duration-preference', duration);
+        console.log(`Cache duration set to ${duration}`);
+        
+        // Update the UI if we currently show cached data
+        const indicator = document.getElementById('cache-indicator');
+        if (indicator && indicator.classList.contains('is-cached')) {
+            // Re-check the cache with the new duration
+            const cacheResult = checkCache('eluna-repositories');
+            if (cacheResult) {
+                updateCacheIndicator(true, cacheResult.timestamp);
+            } else {
+                // If cache is now invalid with new duration, refresh
+                refreshData();
+            }
+        }
+        
+        return true;
+    }
+    return false;
+}
+
+/**
+ * Initialize cache settings from user's previous preference
+ */
+function initCacheSettings() {
+    const savedPreference = localStorage.getItem('cache-duration-preference');
+    if (savedPreference && cacheConfig.durations[savedPreference]) {
+        cacheConfig.current = savedPreference;
+        console.log(`Using saved cache duration preference: ${savedPreference}`);
+    }
+    
+    createCacheSettingsUI();
+
+    attachCacheSettingsEvents();
+}
+
+function attachCacheSettingsEvents() {
+    setTimeout(() => {
+        const indicator = document.getElementById('cache-indicator');
+        
+        if (indicator) {
+            console.log('Adding click event to cache indicator');
+            
+            indicator.addEventListener('click', function(e) {
+                if (!e.target.closest('.cache-refresh-btn')) {
+                    console.log('Opening cache settings dialog');
+                    const dialog = document.getElementById('cache-settings-dialog');
+                    if (dialog) {
+                        dialog.style.display = 'flex';
+                    } else {
+                        console.error('Cache settings dialog not found');
+                        showErrorToast('Could not open settings');
+                    }
+                }
+            });
+            
+            indicator.style.cursor = 'pointer';
+        } else {
+            console.error('Cache indicator element not found');
+        }
+    }, 500);
+}
+
+/**
+ * Save cache settings and close dialog
+ */
+function saveCacheSettings() {
+    // Save to localStorage
+    localStorage.setItem('cache-duration-preference', cacheConfig.current);
+    
+    // Update UI if needed
+    const indicator = document.getElementById('cache-indicator');
+    if (indicator && indicator.classList.contains('is-cached')) {
+        const cacheResult = checkCache('eluna-repositories');
+        if (cacheResult) {
+            updateCacheIndicator(true, cacheResult.timestamp);
+        }
+    }
+    
+    // Close dialog
+    const dialog = document.getElementById('cache-settings-dialog');
+    if (dialog) {
+        dialog.style.display = 'none';
+    }
+    
+    // Show confirmation - UPDATED
+    showSuccessToast('Cache settings saved!');
+}
+
+function clearAllCache() {
+    // Clear only our app's cache keys
+    const appCacheKeys = ['eluna-repositories', 'eluna-repository-icons', 'cache-duration-preference'];
+    appCacheKeys.forEach(key => localStorage.removeItem(key));
+    
+    // Close dialog
+    const dialog = document.getElementById('cache-settings-dialog');
+    if (dialog) {
+        dialog.style.display = 'none';
+    }
+    
+    // Show confirmation - UPDATED
+    showSuccessToast('Cache cleared successfully');
+    
+    // Refresh data
+    refreshData();
 }
 
 /**
