@@ -1,11 +1,10 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Eluna Scripts</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700&display=swap" rel="stylesheet">
@@ -13,10 +12,19 @@
     <link rel="icon" type="image/png" sizes="32x32" href="https://via.placeholder.com/32/000000/ffffff?text=E">
     <link rel="icon" type="image/png" sizes="16x16" href="https://via.placeholder.com/16/000000/ffffff?text=E">
     <meta name="theme-color" content="#000000">
+    
+    <!-- Modular CSS files -->
+    <link rel="stylesheet" href="css/variables.css">
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/layout.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/filters.css">
+    <link rel="stylesheet" href="css/animations.css">
 </head>
 <body>
     <div class="grid-bg"></div>
 
+    <!-- Navigation bar with logo and links -->
     <nav class="navbar" id="navbar">
         <div class="container">
             <div class="logo">
@@ -26,7 +34,7 @@
         </div>
     </nav>
 
-    <!-- Hero Section -->
+    <!-- Hero section with main title and subtitle -->
     <section class="hero">
         <div class="container">
             <div class="hero-content">
@@ -38,7 +46,7 @@
         </div>
     </section>
 
-    <!-- Stats Section -->
+    <!-- Stats section showing repository counts, contributors, and stars -->
     <section class="stats-section">
         <div class="container">
             <div class="stats-grid">
@@ -75,74 +83,151 @@
         </div>
     </section>
 
-    <!-- Main Content Section -->
-    <section class="scripts-section">
+    <!-- Main content section with filters and script listings -->
+    <section class="main-content">
         <div class="container">
-            <div class="scripts-header">
-                <h2 class="section-title">Scripts</h2>
-                
-                <div class="search-wrapper">
-                    <input 
-                        type="text" 
-                        id="search-input" 
-                        placeholder="Search for a script, a function, an author..." 
-                        class="search-input"
-                    >
-                    <div class="search-icon">
-                        <i class="fas fa-search"></i>
+            <!-- Compact filters section -->
+            <div class="filters-container" id="filters-section">
+                <div class="filters-header">
+                    <h3 class="filters-title">Filters</h3>
+                    <div class="cache-status-indicator" id="cache-indicator">
                     </div>
                 </div>
                 
-                <div class="section-controls">
-                    <div class="sort-dropdown">
-                        <button class="control-button" id="sort-button">
-                            <i class="fas fa-sort-amount-down"></i>
-                            <span id="sort-text">More stars</span>
-                        </button>
-                        <div class="sort-options" id="sort-options">
-                            <button class="sort-option" data-sort="newest">More recent</button>
-                            <button class="sort-option" data-sort="stars">More stars</button>
-                            <button class="sort-option" data-sort="forks">More forks</button>
-                            <button class="sort-option" data-sort="updated">Recently updated</button>
+                <div class="filters-content" id="filters-content">
+                    <!-- Search input field -->
+                    <div class="search-wrapper">
+                        <input 
+                            type="text" 
+                            id="search-input" 
+                            placeholder="Search for a script, a function, an author..." 
+                            class="search-input"
+                        >
+                        <div class="search-icon">
+                            <i class="fas fa-search"></i>
                         </div>
+                    </div>
+                    
+                    <!-- Filter controls in a compact layout -->
+                    <div class="filter-controls">
+                        <!-- Sort filter -->
+                        <div class="filter-dropdown sort-dropdown">
+                            <button class="control-button" id="sort-button">
+                                <i class="fas fa-sort-amount-down"></i>
+                                <span id="sort-text">More stars</span>
+                            </button>
+                            <div class="dropdown-menu sort-options" id="sort-options">
+                                <button class="dropdown-item sort-option" data-sort="newest">More recent</button>
+                                <button class="dropdown-item sort-option" data-sort="stars">More stars</button>
+                                <button class="dropdown-item sort-option" data-sort="forks">More forks</button>
+                                <button class="dropdown-item sort-option" data-sort="updated">Recently updated</button>
+                            </div>
+                        </div>
+                        
+                        <!-- Tags filter -->
+                        <div class="filter-dropdown tags-dropdown">
+                            <button class="control-button" id="tags-button">
+                                <i class="fas fa-tags"></i>
+                                <span id="tags-text">All Tags</span>
+                            </button>
+                            <div class="dropdown-menu tags-options" id="tags-options">
+                                <div class="dropdown-search tags-search">
+                                    <input type="text" id="tags-search-input" placeholder="Search tags...">
+                                </div>
+                                <div class="dropdown-list tags-list" id="tags-list">
+                                    <!-- Tags will be populated by JavaScript -->
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Author filter -->
+                        <div class="filter-dropdown author-dropdown">
+                            <button class="control-button" id="author-button">
+                                <i class="fas fa-user"></i>
+                                <span id="author-text">All Authors</span>
+                            </button>
+                            <div class="dropdown-menu author-options" id="author-options">
+                                <div class="dropdown-search author-search">
+                                    <input type="text" id="author-search-input" placeholder="Search authors...">
+                                </div>
+                                <div class="dropdown-list author-list" id="author-list">
+                                    <!-- Authors will be populated by JavaScript -->
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Stars filter -->
+                        <div class="filter-dropdown stars-dropdown">
+                            <button class="control-button" id="stars-button">
+                                <i class="fas fa-star"></i>
+                                <span id="stars-text">All Stars</span>
+                            </button>
+                            <div class="dropdown-menu stars-options" id="stars-options">
+                                <button class="dropdown-item stars-option" data-stars="0">All Stars</button>
+                                <button class="dropdown-item stars-option" data-stars="5">5+ Stars</button>
+                                <button class="dropdown-item stars-option" data-stars="10">10+ Stars</button>
+                                <button class="dropdown-item stars-option" data-stars="20">20+ Stars</button>
+                                <button class="dropdown-item stars-option" data-stars="50">50+ Stars</button>
+                                <button class="dropdown-item stars-option" data-stars="100">100+ Stars</button>
+                            </div>
+                        </div>
+                        
+                        <!-- Date filter -->
+                        <div class="filter-dropdown date-dropdown">
+                            <button class="control-button" id="date-button">
+                                <i class="fas fa-calendar-alt"></i>
+                                <span id="date-text">Any Time</span>
+                            </button>
+                            <div class="dropdown-menu date-options" id="date-options">
+                                <button class="dropdown-item date-option" data-date="any">Any Time</button>
+                                <button class="dropdown-item date-option" data-date="week">Last Week</button>
+                                <button class="dropdown-item date-option" data-date="month">Last Month</button>
+                                <button class="dropdown-item date-option" data-date="quarter">Last 3 Months</button>
+                                <button class="dropdown-item date-option" data-date="year">Last Year</button>
+                            </div>
+                        </div>
+                        
+                        <!-- Clear filters button -->
+                        <button class="control-button clear-all-filters" id="clear-all-filters">
+                            <i class="fas fa-times"></i>
+                            <span>Clear Filters</span>
+                        </button>
                     </div>
                 </div>
             </div>
+            
+            <!-- Scripts listing container -->
+            <div class="scripts-container" id="scripts-container">
+                <!-- Will be populated by JavaScript -->
+            </div>
+            
+            <!-- Pagination controls -->
+            <div class="pagination" id="pagination"></div>
             
             <!-- Loading indicator -->
             <div class="loading-container" id="loading-container">
                 <div class="loading-spinner"></div>
-                <p class="loading-text">Loading scripts from GitHub...</p>
+                <div class="loading-text">Loading scripts...</div>
             </div>
             
-            <!-- Error message -->
-            <div class="error-container" id="error-container" style="display: none;">
-                <div class="error-icon">
-                    <i class="fas fa-exclamation-circle"></i>
-                </div>
-                <h3 class="error-title">Unable to load data</h3>
+            <!-- Error message container -->
+            <div class="error-container" id="error-container">
+                <i class="fas fa-exclamation-circle error-icon"></i>
+                <h3 class="error-title">An error occurred</h3>
                 <p class="error-message" id="error-message"></p>
-                <button class="retry-button" id="retry-button">Try again</button>
+                <button class="retry-button" id="retry-button">Try Again</button>
             </div>
-            
-            <!-- Scripts Container -->
-            <div class="scripts-grid" id="scripts-container"></div>
             
             <!-- No results message -->
-            <div class="no-results" id="no-results" style="display: none;">
-                <div class="no-results-icon">
-                    <i class="fas fa-search"></i>
-                </div>
-                <h3 class="no-results-title">No results found</h3>
-                <p class="no-results-message">Try other search terms or explore our popular categories.</p>
+            <div class="no-results" id="no-results">
+                <i class="fas fa-search no-results-icon"></i>
+                <h3 class="no-results-title">No scripts found</h3>
+                <p class="no-results-message">Try adjusting your filters or search criteria.</p>
             </div>
-            
-            <!-- Pagination -->
-            <div class="pagination" id="pagination"></div>
         </div>
     </section>
 
-    <!-- Footer -->
+    <!-- Footer with links and information -->
     <footer class="footer">
         <div class="container">
             <div class="footer-grid">
@@ -207,10 +292,11 @@
     </footer>
 
     <!-- Back to top button -->
-    <button class="back-to-top" id="back-to-top" aria-label="Retour en haut">
+    <button class="back-to-top" id="back-to-top" aria-label="Back to top">
         <i class="fas fa-arrow-up"></i>
     </button>
 
+    <!-- Script card template -->
     <template id="script-card-template">
         <div class="script-card">
             <div class="script-banner">
@@ -247,7 +333,7 @@
                     
                     <div class="metric">
                         <div class="metric-value" data-metric="watchers"></div>
-                        <div class="metric-label">Observ.</div>
+                        <div class="metric-label">Watchers</div>
                     </div>
                 </div>
                 
@@ -272,6 +358,12 @@
         </div>
     </template>
 
-    <script src="script.js"></script>
+    <!-- Modular JavaScript files -->
+    <script src="js/config.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/filters.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/main.js"></script>
 </body>
 </html>
