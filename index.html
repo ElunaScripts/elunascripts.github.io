@@ -227,6 +227,112 @@
         </div>
     </section>
 
+    <!-- Modal container for repository details -->
+    <div id="repository-modal" class="repository-modal">
+        <div class="repository-modal-content">
+            <div class="repository-modal-header">
+                <button class="close-modal" id="close-repository-modal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="repository-modal-body">
+                <div class="repository-modal-main">
+                    <div class="repository-modal-banner" id="repository-modal-banner"> </div>
+                    <h2 class="repository-modal-title" id="repository-modal-title">Repository Name</h2>
+                    <div class="repository-modal-meta">
+                        <span class="repository-modal-author" id="repository-modal-author">Author</span>
+                        <span class="separator">•</span>
+                        <span class="repository-modal-date" id="repository-modal-date">Date</span>
+                    </div>
+                    <div class="repository-modal-tags" id="repository-modal-tags"> </div>
+                    <div class="repository-modal-readme-container">
+                        <div class="repository-modal-readme-header">
+                            <h3>README</h3>
+                            <div class="repository-modal-readme-loading" id="repository-modal-readme-loading">
+                                <div class="readme-spinner"></div>
+                                <span>Loading README...</span>
+                            </div>
+                        </div>
+                        <div class="repository-modal-readme" id="repository-modal-readme">
+                            <!-- README content will be placed here -->
+                        </div>
+                    </div>
+                </div>
+                <div class="repository-modal-sidebar">
+                    <div class="repository-modal-author-info" id="repository-modal-author-info">
+                        <div class="author-avatar-container">
+                            <div class="author-avatar-placeholder" id="repository-modal-avatar-placeholder">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <img class="author-avatar" id="repository-modal-avatar" src="" alt="Author avatar" style="display: none;">
+                        </div>
+                        <div class="author-name" id="repository-modal-author-name">Author Name</div>
+                    </div>
+                    <div class="repository-modal-stats">
+                        <div class="modal-stat">
+                            <div class="modal-stat-icon">
+                                <i class="fas fa-star"></i>
+                            </div>
+                            <div class="modal-stat-content">
+                                <div class="modal-stat-value" id="repository-modal-stars">0</div>
+                                <div class="modal-stat-label">Stars</div>
+                            </div>
+                        </div>
+                        <div class="modal-stat">
+                            <div class="modal-stat-icon">
+                                <i class="fas fa-code-fork"></i>
+                            </div>
+                            <div class="modal-stat-content">
+                                <div class="modal-stat-value" id="repository-modal-forks">0</div>
+                                <div class="modal-stat-label">Forks</div>
+                            </div>
+                        </div>
+                        <div class="modal-stat">
+                            <div class="modal-stat-icon">
+                                <i class="fas fa-exclamation-circle"></i>
+                            </div>
+                            <div class="modal-stat-content">
+                                <div class="modal-stat-value" id="repository-modal-issues">0</div>
+                                <div class="modal-stat-label">Issues</div>
+                            </div>
+                        </div>
+                        <div class="modal-stat">
+                            <div class="modal-stat-icon">
+                                <i class="fas fa-eye"></i>
+                            </div>
+                            <div class="modal-stat-content">
+                                <div class="modal-stat-value" id="repository-modal-watchers">0</div>
+                                <div class="modal-stat-label">Watchers</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="repository-modal-actions">
+                        <a href="#" class="repository-modal-button primary" id="repository-modal-download" target="_blank">
+                            <i class="fas fa-download"></i> Download
+                        </a>
+                        <a href="#" class="repository-modal-button secondary" id="repository-modal-github" target="_blank">
+                            <i class="fab fa-github"></i> View on GitHub
+                        </a>
+                    </div>
+                    <div class="repository-modal-details">
+                        <div class="repository-modal-detail">
+                            <div class="detail-label">Created:</div>
+                            <div class="detail-value" id="repository-modal-created">--</div>
+                        </div>
+                        <div class="repository-modal-detail">
+                            <div class="detail-label">Last updated:</div>
+                            <div class="detail-value" id="repository-modal-updated">--</div>
+                        </div>
+                        <div class="repository-modal-detail">
+                            <div class="detail-label">License:</div>
+                            <div class="detail-value" id="repository-modal-license">--</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Footer with links and information -->
     <footer class="footer">
         <div class="container">

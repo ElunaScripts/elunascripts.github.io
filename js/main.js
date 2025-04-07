@@ -19,4 +19,14 @@ document.addEventListener('DOMContentLoaded', () => {
             adjustDropdownPosition(dropdown);
         });
     }, 200));
+
+    window.createRepositoryCard = createRepositoryCard;
+
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('#close-repository-modal')) {
+            e.preventDefault();
+            closeRepositoryModal();
+            return false;
+        }
+    });
 });

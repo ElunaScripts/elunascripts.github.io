@@ -426,3 +426,653 @@ function throttle(func, limit) {
         }
     };
 }
+
+/**
+ * Finds an image file in repository contents
+ * @param {Array} contents - The repository contents
+ * @returns {Object|null} - The image file object or null if not found
+ */
+function findImageInContents(contents) {
+    // Image patterns to look for, in order of preference
+    const imagePatterns = [
+        'icon.png', 'icon.jpg', 'icon.jpeg', 'icon.webp',
+        'logo.png', 'logo.jpg', 'logo.jpeg', 'logo.webp',
+        'preview.png', 'preview.jpg', 'preview.jpeg', 'preview.webp',
+        'screenshot.png', 'screenshot.jpg', 'screenshot.jpeg', 'screenshot.webp',
+        'banner.png', 'banner.jpg', 'banner.jpeg', 'banner.webp',
+        'header.png', 'header.jpg', 'header.jpeg', 'header.webp'
+    ];
+    
+    // First try exact matches
+    for (const pattern of imagePatterns) {
+        const exactMatch = contents.find(file => 
+            file.type === 'file' && 
+            file.name.toLowerCase() === pattern
+        );
+        
+        if (exactMatch) {
+            return exactMatch;
+        }
+    }
+    
+    // Then try files that contain these words
+    const imageKeywords = ['icon', 'logo', 'preview', 'screenshot', 'banner', 'header'];
+    
+    for (const keyword of imageKeywords) {
+        const matchingFile = contents.find(file => 
+            file.type === 'file' && 
+            file.name.toLowerCase().includes(keyword) &&
+            /\.(png|jpe?g|webp|gif)$/i.test(file.name)
+        );
+        
+        if (matchingFile) {
+            return matchingFile;
+        }
+    }
+    
+    // Finally, just look for any image file
+    return contents.find(file => 
+        file.type === 'file' && 
+        /\.(png|jpe?g|webp|gif)$/i.test(file.name)
+    ) || null;
+}
+
+/**
+ * Adds an image to a container element
+ * @param {string} imageUrl - The URL of the image
+ * @param {HTMLElement} container - The container element
+ * @param {Object} repo - The repository object
+ */
+function addImageToContainer(imageUrl, container, repo) {
+    // Clear container first
+    container.innerHTML = '';
+    
+    const img = document.createElement('img');
+    img.className = 'script-image';
+    img.src = imageUrl;
+    img.alt = `${repo.name} preview`;
+    
+    img.onerror = () => {
+        // If the image fails to load, generate a background instead
+        container.innerHTML = '';
+        generateBackground(repo, container);
+        
+        // Update cache to indicate no valid image
+        saveToCache(`repo-icon-${repo.id}`, { notFound: true });
+    };
+    
+    container.appendChild(img);
+}
+
+/**
+ * Closes the repository details modal
+ */
+function closeRepositoryModal() {
+    const modal = document.getElementById('repository-modal');
+    if (!modal) return;
+    
+    modal.classList.remove('active');
+    document.body.style.overflow = ''; // Restore scrolling
+    console.log('Modal closed'); // Debugging
+}
+
+/**
+ * Fetches and renders a repository's README file
+ * @param {Object} repo - The repository data
+ * @param {HTMLElement} container - Container to render README in
+ */
+async function fetchAndRenderReadme(repo, container) {
+    try {
+        // Check if marked.js is loaded, if not load it
+        if (typeof marked === 'undefined') {
+            await loadMarkedJS();
+        }
+        
+        // Check cache first
+        const cacheKey = `repo-readme-${repo.id}`;
+        const cachedReadme = checkCache(cacheKey);
+        
+        if (cachedReadme) {
+            container.innerHTML = cachedReadme.data.html;
+            return;
+        }
+        
+        // Fetch README content
+        const readmeUrl = `${repo.url}/readme`;
+        const response = await fetch(readmeUrl);
+        
+        if (!response.ok) {
+            throw new Error(`Failed to fetch README: ${response.status}`);
+        }
+        
+        const readmeData = await response.json();
+        
+        // GitHub returns base64 encoded content
+        const decodedContent = atob(readmeData.content);
+        
+        // Convert Markdown to HTML using marked.js
+        const html = marked.parse(decodedContent, {
+            breaks: true,
+            gfm: true
+        });
+        
+        // Cache the result
+        saveToCache(cacheKey, { html });
+        
+        // Set content
+        container.innerHTML = html;
+        container.className = 'repository-modal-readme readme-markdown';
+        
+        // Make relative links absolute
+        fixRelativeLinks(container, repo.html_url);
+        
+    } catch (error) {
+        console.error('Error in fetchAndRenderReadme:', error);
+        throw error;
+    }
+}
+
+/**
+ * Loads the marked.js library dynamically
+ * @returns {Promise} - Promise that resolves when the library is loaded
+ */
+function loadMarkedJS() {
+    return new Promise((resolve, reject) => {
+        // Check if it's already loaded
+        if (typeof marked !== 'undefined') {
+            resolve();
+            return;
+        }
+        
+        // Create script element
+        const script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js';
+        script.crossOrigin = 'anonymous';
+        script.referrerPolicy = 'no-referrer';
+        
+        script.onload = () => {
+            // Configure marked with options
+            marked.use({
+                pedantic: false,
+                gfm: true,
+                breaks: true,
+                sanitize: false,
+                smartypants: false,
+                xhtml: false
+            });
+            resolve();
+        };
+        
+        script.onerror = () => {
+            reject(new Error('Failed to load marked.js'));
+        };
+        
+        document.head.appendChild(script);
+    });
+}
+
+/**
+ * Converts markdown to HTML
+ * This is a simple implementation. In a production app, use a proper Markdown library.
+ * @param {string} markdown - The markdown content
+ * @returns {string} - The HTML content
+ */
+function convertMarkdownToHtml(markdown) {
+    // Very basic Markdown conversion
+    let html = markdown
+        // Headers
+        .replace(/^# (.*$)/gm, '<h1>$1</h1>')
+        .replace(/^## (.*$)/gm, '<h2>$1</h2>')
+        .replace(/^### (.*$)/gm, '<h3>$1</h3>')
+        .replace(/^#### (.*$)/gm, '<h4>$1</h4>')
+        .replace(/^##### (.*$)/gm, '<h5>$1</h5>')
+        .replace(/^###### (.*$)/gm, '<h6>$1</h6>')
+        
+        // Bold and italic
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.*?)\*/g, '<em>$1</em>')
+        .replace(/__(.*?)__/g, '<strong>$1</strong>')
+        .replace(/_(.*?)_/g, '<em>$1</em>')
+        
+        // Links
+        .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2">$1</a>')
+        
+        // Images
+        .replace(/!\[(.*?)\]\((.*?)\)/g, '<img src="$2" alt="$1">')
+        
+        // Code blocks
+        .replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
+        
+        // Inline code
+        .replace(/`([^`]+)`/g, '<code>$1</code>')
+        
+        // Lists
+        .replace(/^\* (.*$)/gm, '<ul><li>$1</li></ul>')
+        .replace(/^- (.*$)/gm, '<ul><li>$1</li></ul>')
+        .replace(/^\d+\. (.*$)/gm, '<ol><li>$1</li></ol>')
+        
+        // Blockquotes
+        .replace(/^> (.*$)/gm, '<blockquote>$1</blockquote>')
+        
+        // Horizontal rules
+        .replace(/^---$/gm, '<hr>');
+    
+    // Fix consecutive list items (merge them)
+    html = html
+        .replace(/<\/ul><ul>/g, '')
+        .replace(/<\/ol><ol>/g, '');
+    
+    // Convert paragraphs (lines that are not already HTML)
+    const paragraphs = html.split('\n').map(line => {
+        if (line.trim() !== '' && 
+            !line.startsWith('<h') && 
+            !line.startsWith('<ul') && 
+            !line.startsWith('<ol') && 
+            !line.startsWith('<blockquote') && 
+            !line.startsWith('<pre') && 
+            !line.startsWith('<hr')) {
+            return `<p>${line}</p>`;
+        }
+        return line;
+    });
+    
+    return paragraphs.join('\n');
+}
+
+
+/**
+ * Repository image loading utilities
+ * These functions handle loading repository images and generating fallbacks
+ */
+
+/**
+ * Attempts to load a repository image from various potential paths
+ * Implements a more robust image fetching strategy with fallbacks
+ * @param {Object} repo - The repository object
+ * @param {HTMLElement} container - The container to place the image in
+ */
+async function loadRepositoryImage(repo, container) {
+    try {
+        // Check if we have a cached icon for this repo
+        const cachedIcon = checkCache(`repo-icon-${repo.id}`);
+        if (cachedIcon) {
+            if (cachedIcon.data.url) {
+                addImageToContainer(cachedIcon.data.url, container, repo);
+                return true;
+            } else if (cachedIcon.data.notFound) {
+                // We've already determined this repo has no image
+                generateBackground(repo, container);
+                return false;
+            }
+        }
+        
+        // Try to fetch the repository contents to find image files
+        const result = await fetchRepositoryContents(repo);
+        
+        if (result.success && result.imageUrl) {
+            // Save to cache
+            saveToCache(`repo-icon-${repo.id}`, { url: result.imageUrl });
+            addImageToContainer(result.imageUrl, container, repo);
+            return true;
+        } else {
+            // Mark as no image found in cache to avoid future attempts
+            saveToCache(`repo-icon-${repo.id}`, { notFound: true });
+            generateBackground(repo, container);
+            return false;
+        }
+    } catch (error) {
+        console.error('Error loading repository image:', error);
+        generateBackground(repo, container);
+        return false;
+    }
+}
+
+/**
+ * Fetches the contents of a repository to find potential image files
+ * @param {Object} repo - The repository object
+ * @returns {Promise<Object>} - Object with success flag and image URL if found
+ */
+async function fetchRepositoryContents(repo) {
+    try {
+        // Try to fetch repository contents
+        const contentsUrl = `${repo.url}/contents`;
+        const response = await fetch(contentsUrl);
+        
+        if (!response.ok) {
+            throw new Error(`Failed to fetch repository contents: ${response.status}`);
+        }
+        
+        const contents = await response.json();
+        
+        // Look for image files in the root directory
+        const imageFile = findImageInContents(contents);
+        
+        if (imageFile) {
+            return {
+                success: true,
+                imageUrl: imageFile.download_url
+            };
+        }
+        
+        // If no image found in root, try to check if there's an 'images', 'img', or 'assets' directory
+        const imageDirectories = contents.filter(item => 
+            item.type === 'dir' && 
+            ['images', 'img', 'assets', 'media', 'screenshots', 'docs'].includes(item.name.toLowerCase())
+        );
+        
+        for (const dir of imageDirectories) {
+            const dirContentsResponse = await fetch(dir.url);
+            
+            if (dirContentsResponse.ok) {
+                const dirContents = await dirContentsResponse.json();
+                const imageInDir = findImageInContents(dirContents);
+                
+                if (imageInDir) {
+                    return {
+                        success: true,
+                        imageUrl: imageInDir.download_url
+                    };
+                }
+            }
+        }
+        
+        // No image found anywhere
+        return {
+            success: false
+        };
+    } catch (error) {
+        console.error('Error fetching repository contents:', error);
+        return {
+            success: false,
+            error: error.message
+        };
+    }
+}
+
+/**
+ * Opens the repository details modal with the given repository data
+ * @param {Object} repo - The repository data
+ */
+async function openRepositoryModal(repo) {
+    const modal = document.getElementById('repository-modal');
+    if (!modal) return;
+    
+    // Set basic repository information
+    document.getElementById('repository-modal-title').textContent = formatRepoName(repo.name);
+    document.getElementById('repository-modal-author').textContent = repo.owner.login;
+    document.getElementById('repository-modal-author-name').textContent = repo.owner.login;
+    document.getElementById('repository-modal-date').textContent = formatDate(repo.created_at);
+    
+    // Set stats
+    document.getElementById('repository-modal-stars').textContent = repo.stargazers_count;
+    document.getElementById('repository-modal-forks').textContent = repo.forks_count;
+    document.getElementById('repository-modal-issues').textContent = repo.open_issues_count;
+    document.getElementById('repository-modal-watchers').textContent = repo.watchers_count;
+    
+    // Set dates and license
+    document.getElementById('repository-modal-created').textContent = formatDate(repo.created_at);
+    document.getElementById('repository-modal-updated').textContent = formatDate(repo.updated_at);
+    document.getElementById('repository-modal-license').textContent = repo.license ? repo.license.name : 'Not specified';
+    
+    // Set links
+    document.getElementById('repository-modal-download').href = `${repo.html_url}/archive/refs/heads/master.zip`;
+    document.getElementById('repository-modal-github').href = repo.html_url;
+    
+    // Clear previous tags
+    const tagsContainer = document.getElementById('repository-modal-tags');
+    tagsContainer.innerHTML = '';
+    
+    // Add tags
+    const topics = repo.topics || [];
+    if (topics.length > 0) {
+        topics.forEach(topic => {
+            const tagElement = document.createElement('span');
+            tagElement.className = 'repository-modal-tag';
+            tagElement.textContent = topic;
+            tagsContainer.appendChild(tagElement);
+        });
+    } else {
+        ['Lua', 'Eluna', 'Script'].forEach(tag => {
+            const tagElement = document.createElement('span');
+            tagElement.className = 'repository-modal-tag';
+            tagElement.textContent = tag;
+            tagsContainer.appendChild(tagElement);
+        });
+    }
+    
+    // Set banner image or generated background
+    const bannerContainer = document.getElementById('repository-modal-banner');
+    bannerContainer.innerHTML = '';
+    
+    try {
+        await loadRepositoryImage(repo, bannerContainer);
+    } catch (error) {
+        console.error('Error loading repository banner:', error);
+        generateBackground(repo, bannerContainer);
+    }
+    
+    // Load avatar if available
+    const avatarPlaceholder = document.getElementById('repository-modal-avatar-placeholder');
+    const avatarImg = document.getElementById('repository-modal-avatar');
+    
+    if (repo.owner && repo.owner.avatar_url) {
+        avatarImg.src = repo.owner.avatar_url;
+        avatarImg.style.display = 'block';
+        avatarPlaceholder.style.display = 'none';
+    } else {
+        avatarImg.style.display = 'none';
+        avatarPlaceholder.style.display = 'flex';
+    }
+    
+    // Show loading state for README
+    const readmeLoading = document.getElementById('repository-modal-readme-loading');
+    const readmeContainer = document.getElementById('repository-modal-readme');
+    readmeLoading.style.display = 'flex';
+    readmeContainer.innerHTML = '';
+    
+    // Fetch and render README
+    try {
+        await fetchAndRenderReadme(repo, readmeContainer);
+        readmeLoading.style.display = 'none';
+    } catch (error) {
+        console.error('Error fetching README:', error);
+        readmeLoading.style.display = 'none';
+        readmeContainer.innerHTML = `
+            <div class="readme-error">
+                <i class="fas fa-exclamation-circle"></i>
+                <p>Failed to load README. The repository might not have a README file or it's not accessible.</p>
+            </div>
+        `;
+    }
+    
+    // Show the modal
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden'; // Prevent scrolling
+    
+    // Set up the close button directly
+    document.querySelector('#close-repository-modal').onclick = function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        closeRepositoryModal();
+        return false;
+    };
+}
+
+/**
+ * Fixes relative links in a README to absolute links
+ * @param {HTMLElement} container - The container with the README HTML
+ * @param {string} baseUrl - The base URL of the repository
+ */
+function fixRelativeLinks(container, baseUrl) {
+    const links = container.querySelectorAll('a');
+    const images = container.querySelectorAll('img');
+    
+    // Fix links
+    links.forEach(link => {
+        const href = link.getAttribute('href');
+        if (href && !href.startsWith('http') && !href.startsWith('#')) {
+            link.setAttribute('href', `${baseUrl}/${href}`);
+        }
+        
+        // Open external links in new tab
+        if (href && (href.startsWith('http') || href.startsWith('www'))) {
+            link.setAttribute('target', '_blank');
+            link.setAttribute('rel', 'noopener noreferrer');
+        }
+    });
+    
+    // Fix images
+    images.forEach(img => {
+        const src = img.getAttribute('src');
+        if (src && !src.startsWith('http')) {
+            img.setAttribute('src', `${baseUrl}/${src}`);
+        }
+    });
+}
+
+/**
+ * Initializes the repository modal
+ */
+function initRepositoryModal() {
+    // Create the modal if it doesn't exist
+    if (!document.getElementById('repository-modal')) {
+        const modalHtml = `
+        <div id="repository-modal" class="repository-modal">
+            <div class="repository-modal-content">
+                <div class="repository-modal-header">
+                    <button class="close-modal" id="close-repository-modal" onclick="closeRepositoryModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="repository-modal-body">
+                    <div class="repository-modal-main">
+                        <div class="repository-modal-banner" id="repository-modal-banner">
+                            <!-- Banner image or generated background will be placed here -->
+                        </div>
+                        <h2 class="repository-modal-title" id="repository-modal-title">Repository Name</h2>
+                        <div class="repository-modal-meta">
+                            <span class="repository-modal-author" id="repository-modal-author">Author</span>
+                            <span class="separator">•</span>
+                            <span class="repository-modal-date" id="repository-modal-date">Date</span>
+                        </div>
+                        <div class="repository-modal-tags" id="repository-modal-tags">
+                            <!-- Tags will be placed here -->
+                        </div>
+                        <div class="repository-modal-readme-container">
+                            <div class="repository-modal-readme-header">
+                                <h3>README</h3>
+                                <div class="repository-modal-readme-loading" id="repository-modal-readme-loading">
+                                    <div class="readme-spinner"></div>
+                                    <span>Loading README...</span>
+                                </div>
+                            </div>
+                            <div class="repository-modal-readme" id="repository-modal-readme">
+                                <!-- README content will be placed here -->
+                            </div>
+                        </div>
+                    </div>
+                    <div class="repository-modal-sidebar">
+                        <div class="repository-modal-author-info" id="repository-modal-author-info">
+                            <div class="author-avatar-container">
+                                <div class="author-avatar-placeholder" id="repository-modal-avatar-placeholder">
+                                    <i class="fas fa-user"></i>
+                                </div>
+                                <img class="author-avatar" id="repository-modal-avatar" src="" alt="Author avatar" style="display: none;">
+                            </div>
+                            <div class="author-name" id="repository-modal-author-name">Author Name</div>
+                        </div>
+                        <div class="repository-modal-stats">
+                            <div class="modal-stat">
+                                <div class="modal-stat-icon">
+                                    <i class="fas fa-star"></i>
+                                </div>
+                                <div class="modal-stat-content">
+                                    <div class="modal-stat-value" id="repository-modal-stars">0</div>
+                                    <div class="modal-stat-label">Stars</div>
+                                </div>
+                            </div>
+                            <div class="modal-stat">
+                                <div class="modal-stat-icon">
+                                    <i class="fas fa-code-fork"></i>
+                                </div>
+                                <div class="modal-stat-content">
+                                    <div class="modal-stat-value" id="repository-modal-forks">0</div>
+                                    <div class="modal-stat-label">Forks</div>
+                                </div>
+                            </div>
+                            <div class="modal-stat">
+                                <div class="modal-stat-icon">
+                                    <i class="fas fa-exclamation-circle"></i>
+                                </div>
+                                <div class="modal-stat-content">
+                                    <div class="modal-stat-value" id="repository-modal-issues">0</div>
+                                    <div class="modal-stat-label">Issues</div>
+                                </div>
+                            </div>
+                            <div class="modal-stat">
+                                <div class="modal-stat-icon">
+                                    <i class="fas fa-eye"></i>
+                                </div>
+                                <div class="modal-stat-content">
+                                    <div class="modal-stat-value" id="repository-modal-watchers">0</div>
+                                    <div class="modal-stat-label">Watchers</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="repository-modal-actions">
+                            <a href="#" class="repository-modal-button primary" id="repository-modal-download" target="_blank">
+                                <i class="fas fa-download"></i> Download
+                            </a>
+                            <a href="#" class="repository-modal-button secondary" id="repository-modal-github" target="_blank">
+                                <i class="fab fa-github"></i> View on GitHub
+                            </a>
+                        </div>
+                        <div class="repository-modal-details">
+                            <div class="repository-modal-detail">
+                                <div class="detail-label">Created:</div>
+                                <div class="detail-value" id="repository-modal-created">--</div>
+                            </div>
+                            <div class="repository-modal-detail">
+                                <div class="detail-label">Last updated:</div>
+                                <div class="detail-value" id="repository-modal-updated">--</div>
+                            </div>
+                            <div class="repository-modal-detail">
+                                <div class="detail-label">License:</div>
+                                <div class="detail-value" id="repository-modal-license">--</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+        
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+    }
+    
+    // Add event listeners
+    const closeButton = document.getElementById('close-repository-modal');
+    const modal = document.getElementById('repository-modal');
+    
+    if (closeButton) {
+        closeButton.addEventListener('click', function(e) {
+            e.preventDefault();
+            closeRepositoryModal();
+        });
+    }
+    
+    if (modal) {
+        // Close the modal when clicking outside the content
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeRepositoryModal();
+            }
+        });
+        
+        // Close on escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && modal.classList.contains('active')) {
+                closeRepositoryModal();
+            }
+        });
+    }
+}

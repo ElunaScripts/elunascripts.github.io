@@ -86,6 +86,67 @@ async function fetchRepositories() {
 }
 
 /**
+ * Patch the fetchRepositories function to ensure it properly fetches complete repository data
+ * including URLs needed for README and content lookup
+ */
+function patchFetchRepositories() {
+    // Store reference to the original function
+    const originalFetchRepositories = window.fetchRepositories;
+    
+    // Create an enhanced version that ensures we get all needed data
+    window.fetchRepositories = async function() {
+        try {
+            await originalFetchRepositories();
+            
+            // Check if the repos have all the data we need
+            const needsDetailedData = config.data.repositories.some(repo => !repo.url);
+            
+            if (needsDetailedData) {
+                showInfoToast("Fetching additional repository data...");
+                
+                // Fetch detailed data for each repository
+                const enhancedRepos = [];
+                
+                for (const repo of config.data.repositories) {
+                    try {
+                        if (!repo.url) {
+                            // Fetch the detailed repository data
+                            const response = await fetch(`https://api.github.com/repos/${repo.owner.login}/${repo.name}`);
+                            
+                            if (response.ok) {
+                                const detailedRepo = await response.json();
+                                enhancedRepos.push(detailedRepo);
+                            } else {
+                                // If failed, keep the original repo
+                                enhancedRepos.push(repo);
+                            }
+                        } else {
+                            enhancedRepos.push(repo);
+                        }
+                    } catch (error) {
+                        console.error(`Error fetching details for ${repo.name}:`, error);
+                        enhancedRepos.push(repo);
+                    }
+                }
+                
+                // Update the repositories with enhanced data
+                config.data.repositories = enhancedRepos;
+                config.data.filteredRepositories = [...enhancedRepos];
+                
+                // Save to cache
+                saveToCache('eluna-repositories', enhancedRepos);
+                
+                // Process the data
+                processRepositoryData({ data: enhancedRepos, timestamp: new Date().getTime() });
+            }
+        } catch (error) {
+            console.error('Error in enhanced fetchRepositories:', error);
+            showErrorToast("Failed to fetch all repository data");
+        }
+    };
+}
+
+/**
  * Configures the stars slider based on repository data
  */
 function configureStarsSlider() {

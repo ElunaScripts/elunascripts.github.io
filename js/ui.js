@@ -109,7 +109,8 @@ function generateRepositoryIcon(repo, container) {
 }
 
 /**
- * Creates a card element for a repository - this version doesn't attempt to load icons from GitHub
+ * Updates the createRepositoryCard function to make the repository title clickable
+ * and open the detail modal
  * @param {Object} repo - The repository data
  * @param {Number} index - Index for animation delay
  * @returns {HTMLElement} - The card element
@@ -123,11 +124,19 @@ function createRepositoryCard(repo, index) {
     
     const imageContainer = card.querySelector('.script-image-container');
     
-    // Skip external API calls for icons and always use generated backgrounds
-    // This is the key change to avoid rate limiting
-    generateRepositoryIcon(repo, imageContainer);
+    // Use the new image loading function
+    loadRepositoryImage(repo, imageContainer);
     
-    card.querySelector('.script-title').textContent = formatRepoName(repo.name);
+    const titleElement = card.querySelector('.script-title');
+    titleElement.textContent = formatRepoName(repo.name);
+    
+    // Make the title clickable and open the modal
+    titleElement.style.cursor = 'pointer';
+    titleElement.addEventListener('click', (e) => {
+        e.preventDefault();
+        openRepositoryModal(repo);
+    });
+    
     card.querySelector('.script-author').textContent = repo.owner.login;
     card.querySelector('.script-date').textContent = formatDate(repo.created_at);
     card.querySelector('.script-description').textContent = repo.description || 'No description available.';
@@ -198,6 +207,14 @@ function createRepositoryCard(repo, index) {
     
     primaryButton.href = `${repo.html_url}/archive/refs/heads/master.zip`;
     secondaryButton.href = repo.html_url;
+    
+    // Make the entire card clickable to open the detail modal
+    cardElement.addEventListener('click', (e) => {
+        // Don't trigger if clicking on a button or tag
+        if (!e.target.closest('.script-button') && !e.target.closest('.script-tag')) {
+            openRepositoryModal(repo);
+        }
+    });
     
     return card;
 }
